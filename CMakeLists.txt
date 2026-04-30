@@ -3,4 +3,5 @@ project(DepAnalyser)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(DepAnalyser src/graph/graph.cpp)
+add_executable(DepAnalyser src/main.cpp
+        src/graph/graph.cpp)
