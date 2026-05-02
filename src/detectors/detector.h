@@ -7,6 +7,7 @@ namespace DepAnalyser::Detection {
     class Detector {
     public:
         explicit Detector(const Graph::Graph& graph) : graph_(graph) {}
+        virtual ~Detector() = default;
         virtual void run() = 0;
 
     protected:

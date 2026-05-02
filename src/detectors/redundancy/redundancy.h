@@ -1,6 +1,6 @@
 #pragma once
-#include "detector.h"
-#include "../common/types.h"
+#include "../detector.h"
+#include "../../common/types.h"
 #include <queue>
 
 namespace DepAnalyser::Detection {

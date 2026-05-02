@@ -21,7 +21,7 @@ namespace DepAnalyser::Graph {
     public:
         Vertex* addVertex(const std::string& file_name);
         Vertex* findVertex(const std::string& file_name);
-        void addEdge(Vertex *from, Vertex *to);
+        void addEdge(Vertex* from, Vertex* to);
         [[nodiscard]] const std::unordered_map<std::string, std::unique_ptr<Vertex>>& getVertices() const;
     };
 }
