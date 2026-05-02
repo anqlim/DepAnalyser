@@ -1,27 +1,28 @@
-#ifndef DEPANALYSER_GRAPH_H
-#define DEPANALYSER_GRAPH_H
-
+#pragma once
 #include <vector>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <memory>
 
-struct Vertex {
-    explicit Vertex(std::string file_name) : file_name(std::move(file_name)) {}
+namespace DepAnalyser::Graph {
 
-    std::string file_name;
-    std::unordered_set<Vertex*> dependencies;
-    std::unordered_set<Vertex*> dependents;
-};
+    struct Vertex {
+        explicit Vertex(std::string file_name) : file_name(std::move(file_name)) {}
+        std::string file_name;
+        std::unordered_set<Vertex*> dependencies;
+        std::unordered_set<Vertex*> dependents;
+    };
 
-class Graph {
-private:
-    std::unordered_map<std::string, std::unique_ptr<Vertex>> vertices_;
-public:
-    Vertex* addVertex(const std::string& file_name);
-    Vertex* findVertex(const std::string& file_name);
-    void addEdge(Vertex* from, Vertex* to);
-};
+    class Graph {
+    private:
+        std::unordered_map<std::string, std::unique_ptr<Vertex>> vertices_;
 
-#endif
+    public:
+        Vertex* addVertex(const std::string& file_name);
+        Vertex* findVertex(const std::string& file_name);
+        void addEdge(Vertex *from, Vertex *to);
+        [[nodiscard]] const std::unordered_map<std::string, std::unique_ptr<Vertex>>& getVertices() const;
+    };
+}
+
