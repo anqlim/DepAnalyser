@@ -28,4 +28,6 @@ add_executable(DepAnalyser src/main.cpp
         src/parser/factory.cpp
         src/parser/factory.h
         src/parser/graph_builder.cpp
-        src/parser/graph_builder.h)
+        src/parser/graph_builder.h
+        src/common/tread_pool/thread_pool.cpp
+        src/common/tread_pool/thread_pool.h)

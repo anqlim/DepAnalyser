@@ -4,15 +4,22 @@ namespace DepAnalyser::Parsing {
 
     Graph::Graph GraphBuilder::build() {
         auto files = collectFiles();
+        Multithreading::ThreadPool pool(std::thread::hardware_concurrency());
 
-        std::vector<ParseResult> results;
-        std::mutex mutex;
+        std::vector<std::future<Types::ParseResult>> futures;
+        for (auto& file : files) {
+            futures.push_back(pool.submit([this, file] {
+                return parseFile(file);
+            }));
+        }
 
-        // thread pool — каждый файл в отдельном потоке
-        // каждый поток вызывает parseFile и пишет в results под мьютексом
+        std::vector<Types::ParseResult> results;
+        for (auto& future : futures) {
+            results.push_back(future.get());
+        }
 
         buildGraph(results);
-        return std::move(graph_);
+        return graph_;
     }
 
     std::vector<std::string> GraphBuilder::collectFiles() const {
@@ -34,14 +41,15 @@ namespace DepAnalyser::Parsing {
         return files;
     }
 
-    GraphBuilder::ParseResult GraphBuilder::parseFile(const std::string& path) const {
+    Types::ParseResult GraphBuilder::parseFile(const std::string& path) const {
         std::string extension = std::filesystem::path(path).extension().string();
         auto parser = ParserFactory::create(extension);
+        if (!parser) return {path, {}};
         std::string current_dir = std::filesystem::path(path).parent_path().string();
         return { path, parser->parse(path, current_dir) };
     }
 
-    void GraphBuilder::buildGraph(const std::vector<GraphBuilder::ParseResult>& results) {
+    void GraphBuilder::buildGraph(const std::vector<Types::ParseResult>& results) {
         for (auto& file : results) {
             graph_.addVertex(file.file_path);
         }

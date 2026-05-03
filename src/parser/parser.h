@@ -1,7 +1,7 @@
 #pragma once
 #include "../graph/graph.h"
+#include "../common/types.h"
 #include <string_view>
-#include <mutex>
 #include <filesystem>
 
 namespace DepAnalyser::Parsing {
