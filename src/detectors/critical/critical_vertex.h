@@ -1,5 +1,5 @@
 #pragma once
-#include "detector.h"
+#include "../detector.h"
 #include <stack>
 #include <queue>
 
