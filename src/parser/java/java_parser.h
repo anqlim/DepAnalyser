@@ -1,5 +1,7 @@
 #pragma once
 #include "../parser.h"
+#include <fstream>
+#include <algorithm>
 
 namespace DepAnalyser::Parsing {
 
