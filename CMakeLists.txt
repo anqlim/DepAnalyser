@@ -3,7 +3,7 @@ project(DepAnalyser)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(DepAnalyser src/main.cpp
+set(SOURCES
         src/graph/graph.cpp
         src/graph/graph.h
         src/detectors/detector.h
@@ -31,3 +31,27 @@ add_executable(DepAnalyser src/main.cpp
         src/parser/graph_builder.h
         src/common/tread_pool/thread_pool.cpp
         src/common/tread_pool/thread_pool.h)
+
+# основное приложение
+add_executable(DepAnalyser src/main.cpp ${SOURCES})
+
+# тесты
+include(FetchContent)
+FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/heads/main.zip
+)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
+add_executable(DepAnalyserTests
+        tests/graph_test.cpp
+        tests/cycle_detector_test.cpp
+        tests/critical_vertex_test.cpp
+        tests/redundancy_test.cpp
+        ${SOURCES}
+        tests/helpers.h)
+
+target_link_libraries(DepAnalyserTests gtest_main)
+add_test(NAME DepAnalyserTests COMMAND DepAnalyserTests)

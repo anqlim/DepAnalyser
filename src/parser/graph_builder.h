@@ -8,6 +8,12 @@ namespace DepAnalyser::Parsing {
     class GraphBuilder {
     public:
         explicit GraphBuilder(std::string_view project_path) : project_path_(project_path) {}
+
+        GraphBuilder(const GraphBuilder&) = delete;
+        GraphBuilder& operator=(const GraphBuilder&) = delete;
+        GraphBuilder(GraphBuilder&&) = default;
+        GraphBuilder& operator=(GraphBuilder&&) = default;
+
         Graph::Graph build();
 
     private:
