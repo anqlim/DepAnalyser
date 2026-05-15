@@ -19,6 +19,11 @@ namespace DepAnalyser::Graph {
         std::unordered_map<std::string, std::unique_ptr<Vertex>> vertices_;
 
     public:
+        Graph() = default;
+        Graph(const Graph&) = delete;            // запрет копирования
+        Graph& operator=(const Graph&) = delete; // запрет копирования
+        Graph(Graph&&) = default;                // разрешить перемещение
+        Graph& operator=(Graph&&) = default;     // разрешить перемещение
         Vertex* addVertex(const std::string& file_name);
         Vertex* findVertex(const std::string& file_name);
         void addEdge(Vertex* from, Vertex* to);

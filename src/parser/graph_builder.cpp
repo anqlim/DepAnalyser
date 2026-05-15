@@ -19,7 +19,7 @@ namespace DepAnalyser::Parsing {
         }
 
         buildGraph(results);
-        return graph_;
+        return std::move(graph_);
     }
 
     std::vector<std::string> GraphBuilder::collectFiles() const {
