@@ -34,7 +34,9 @@ namespace DepAnalyser::Detection {
             for (auto& v : component) {
                 if (centrality_[v] > centrality_[mx]) mx = v;
             }
-            critical_vertices_.insert(mx);
+            if (centrality_[mx] > 0) {
+                critical_vertices_.insert(mx);
+            }
         }
 
         markRan();
