@@ -46,12 +46,13 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 add_executable(DepAnalyserTests
+        ${SOURCES}
         tests/graph_test.cpp
         tests/cycle_detector_test.cpp
         tests/critical_vertex_test.cpp
         tests/redundancy_test.cpp
-        ${SOURCES}
-        tests/helpers.h)
+        tests/helpers.h
+        tests/parser_test.cpp)
 
 target_link_libraries(DepAnalyserTests gtest_main)
 add_test(NAME DepAnalyserTests COMMAND DepAnalyserTests)

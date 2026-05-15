@@ -19,6 +19,7 @@ namespace DepAnalyser::Parsing {
             std::string import_path = line.substr(start, end - start);
             // com.example.utils → com/example/utils.java
             std::replace(import_path.begin(), import_path.end(), '.', '/');
+            if (import_path.starts_with("java/") || import_path.starts_with("javax/")) continue;
 
             std::filesystem::path resolved = std::filesystem::path(current_dir) / (import_path + ".java");
             dependencies.push_back(resolved.string());
