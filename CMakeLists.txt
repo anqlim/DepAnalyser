@@ -3,6 +3,8 @@ project(DepAnalyser)
 
 set(CMAKE_CXX_STANDARD 20)
 
+include(FetchContent)
+
 set(SOURCES
         src/graph/graph.cpp
         src/graph/graph.h
@@ -33,10 +35,45 @@ set(SOURCES
         src/common/tread_pool/thread_pool.h)
 
 # основное приложение
-add_executable(DepAnalyser src/main.cpp ${SOURCES})
+add_executable(DepAnalyser src/main.cpp ${SOURCES}
+        src/server/analysis_service.cpp
+        src/server/analysis_service.h)
+
+# Json
+FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(nlohmann_json)
+target_link_libraries(DepAnalyser nlohmann_json::nlohmann_json)
+
+# Asio
+FetchContent_Declare(
+        asio
+        GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+        GIT_TAG master
+)
+FetchContent_MakeAvailable(asio)
+
+# Crow
+FetchContent_Declare(
+        crow
+        GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
+        GIT_TAG master
+)
+set(ASIO_INCLUDE_DIR ${asio_SOURCE_DIR}/include CACHE PATH "" FORCE)
+FetchContent_MakeAvailable(crow)
+
+target_include_directories(DepAnalyser PRIVATE
+        ${asio_SOURCE_DIR}/include
+        ${crow_SOURCE_DIR}/include)
+
+target_compile_definitions(DepAnalyser PRIVATE
+        ASIO_STANDALONE
+        ASIO_NO_DEPRECATED)
 
 # тесты
-include(FetchContent)
 FetchContent_Declare(
         googletest
         URL https://github.com/google/googletest/archive/refs/heads/main.zip
