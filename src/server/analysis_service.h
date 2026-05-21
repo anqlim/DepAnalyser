@@ -4,6 +4,7 @@
 #include "../detectors/cycle/cycle.h"
 #include "../detectors/critical/critical_vertex.h"
 #include "../detectors/redundancy/redundancy.h"
+#include <sw/redis++/redis++.h>
 
 namespace DepAnalyser::AnalysisService {
 
@@ -11,6 +12,8 @@ namespace DepAnalyser::AnalysisService {
                           const std::unordered_set<const Graph::Vertex *>& critical,
                           const std::vector<Types::Edge>& redundancy);
 
-    std::string analyse(std::string_view path);
+    static std::string computeCacheKey(std::string_view path);
+
+    std::string analyse(std::string_view path, sw::redis::Redis& redis);
 
 }

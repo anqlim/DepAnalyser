@@ -2,7 +2,12 @@
 
 namespace DepAnalyser::AnalysisService {
 
-    std::string analyse(std::string_view path) {
+    std::string analyse(std::string_view path, sw::redis::Redis& redis) {
+        auto key = computeCacheKey(path);
+
+        auto cached = redis.get(key);
+        if (cached) return *cached;
+
         Parsing::GraphBuilder builder(path);
         Graph::Graph graph = builder.build();
 
@@ -15,7 +20,19 @@ namespace DepAnalyser::AnalysisService {
         Detection::RedundancyDetector redundancy(graph, cycles.result());
         redundancy.run();
 
-        return buildJson(graph, cycles.result(), critical.result(), redundancy.result());
+        auto result = buildJson(graph, cycles.result(), critical.result(), redundancy.result());
+        redis.setex(key, 3600, result);
+        return result;
+    }
+
+    static std::string computeCacheKey(std::string_view path) {
+        std::size_t hash = 0;
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+            if (!entry.is_regular_file()) continue;
+            auto mtime = std::filesystem::last_write_time(entry).time_since_epoch().count();
+            hash ^= std::hash<std::string>{}(entry.path().string()) + mtime;
+        }
+        return "analysis:" + std::to_string(hash);
     }
 
     std::string buildJson(const Graph::Graph& graph, const std::vector<std::unordered_set<const Graph::Vertex *>>& scc,

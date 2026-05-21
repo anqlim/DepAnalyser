@@ -46,7 +46,6 @@ FetchContent_Declare(
         GIT_TAG master
 )
 FetchContent_MakeAvailable(nlohmann_json)
-target_link_libraries(DepAnalyser nlohmann_json::nlohmann_json)
 
 # Asio
 FetchContent_Declare(
@@ -72,6 +71,38 @@ target_include_directories(DepAnalyser PRIVATE
 target_compile_definitions(DepAnalyser PRIVATE
         ASIO_STANDALONE
         ASIO_NO_DEPRECATED)
+
+# hiredis
+FetchContent_Declare(
+        hiredis
+        GIT_REPOSITORY https://github.com/redis/hiredis.git
+        GIT_TAG        v1.2.0
+)
+
+# redis-plus-plus
+FetchContent_Declare(
+        redis-plus-plus
+        GIT_REPOSITORY https://github.com/sewenew/redis-plus-plus.git
+        GIT_TAG        1.3.15
+)
+FetchContent_MakeAvailable(hiredis)
+
+file(MAKE_DIRECTORY ${hiredis_SOURCE_DIR}/hiredis)
+file(GLOB HIREDIS_HEADERS "${hiredis_SOURCE_DIR}/*.h")
+foreach(HEADER ${HIREDIS_HEADERS})
+    get_filename_component(HEADER_NAME ${HEADER} NAME)
+    configure_file(${HEADER} ${hiredis_SOURCE_DIR}/hiredis/${HEADER_NAME} COPYONLY)
+endforeach()
+
+set(HIREDIS_HEADER ${hiredis_SOURCE_DIR} CACHE PATH "" FORCE)
+set(HIREDIS_LIB hiredis::hiredis CACHE STRING "" FORCE)
+
+FetchContent_MakeAvailable(redis-plus-plus)
+
+target_link_libraries(DepAnalyser PRIVATE
+        nlohmann_json::nlohmann_json
+        hiredis::hiredis
+        redis++)
 
 # тесты
 FetchContent_Declare(
