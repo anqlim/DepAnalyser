@@ -5,20 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DepAnalyser</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Lora:ital@1&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0d0d0d;
-            --surface: #161616;
-            --border: #2a2a2a;
-            --text: #e8e8e8;
-            --text-muted: #666;
-            --accent: #00e5ff;
-            --cycle: #ff4757;
-            --critical: #ffa502;
-            --redundant: #a29bfe;
-            --normal: #444;
-            --node-bg: #1e1e1e;
-            --node-border: #333;
+            --bg: #000d1a;
+            --surface: #000d1a;
+            --border: #083550;
+            --graph-bg: #000d1a;
+            --text: #EEE8DC;
+            --text-muted: #4f7a96;
+            --accent: #4f7a96;
+            --cycle: #BA0D18;
+            --cycle-edge: #8B0000;
+            --redundant: #4d8fa8;
+            --normal: #0d3d58;
+            --node-fill: #1a4a66;
+            --node-stroke: #2a6080;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,7 +29,8 @@
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Courier New', monospace;
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -37,17 +41,18 @@
             display: flex;
             align-items: center;
             gap: 24px;
-            padding: 14px 24px;
+            padding: 14px 28px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
         }
 
         header h1 {
-            font-size: 13px;
-            font-weight: 400;
-            letter-spacing: 0.15em;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            color: var(--accent);
+            color: var(--text-muted);
+            white-space: nowrap;
         }
 
         .input-row {
@@ -58,69 +63,69 @@
 
         input[type="text"] {
             flex: 1;
-            background: var(--surface);
-            border: 1px solid var(--border);
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border);
             color: var(--text);
-            padding: 7px 12px;
-            font-family: inherit;
-            font-size: 12px;
+            padding: 6px 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 300;
             outline: none;
-            transition: border-color 0.15s;
+            transition: border-color 0.2s;
         }
 
-        input[type="text"]:focus { border-color: var(--accent); }
-        input[type="text"]::placeholder { color: var(--text-muted); }
+        input[type="text"]:focus { border-bottom-color: var(--text-muted); }
+        input[type="text"]::placeholder { color: var(--border); }
 
         button {
-            background: var(--accent);
-            color: #000;
-            border: none;
-            padding: 7px 18px;
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 6px 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
             cursor: pointer;
-            transition: opacity 0.15s;
+            transition: all 0.2s;
         }
 
-        button:hover { opacity: 0.85; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button:hover { border-color: var(--text-muted); color: var(--text); }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
 
         .legend {
-            display: flex;
-            gap: 20px;
+            display: none;
+            gap: 24px;
             align-items: center;
-            padding: 0 24px;
+            padding: 8px 28px;
+            border-bottom: 1px solid var(--border);
             flex-shrink: 0;
         }
+
+        .legend.visible { display: flex; }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 7px;
             font-size: 11px;
             color: var(--text-muted);
+            letter-spacing: 0.05em;
         }
 
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .legend-line {
-            width: 20px;
-            height: 2px;
-        }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .legend-line { width: 20px; height: 1px; }
+        .legend-dash { width: 20px; height: 1px; background: repeating-linear-gradient(90deg, var(--redundant) 0, var(--redundant) 4px, transparent 4px, transparent 7px); }
 
         #status {
             font-size: 11px;
             color: var(--text-muted);
-            padding: 6px 24px;
+            padding: 5px 28px;
             flex-shrink: 0;
-            min-height: 24px;
+            min-height: 22px;
+            letter-spacing: 0.04em;
         }
 
         #status.error { color: var(--cycle); }
@@ -129,12 +134,10 @@
             flex: 1;
             overflow: hidden;
             position: relative;
+            background: var(--graph-bg);
         }
 
-        svg {
-            width: 100%;
-            height: 100%;
-        }
+        svg { width: 100%; height: 100%; }
 
         .node circle {
             stroke-width: 1.5;
@@ -143,36 +146,51 @@
         }
 
         .node text {
-            font-family: 'Courier New', monospace;
+            font-family: 'Inter', sans-serif;
             font-size: 10px;
+            font-weight: 300;
             fill: var(--text-muted);
             pointer-events: none;
             user-select: none;
         }
 
-        .node:hover circle { opacity: 0.8; }
+        .node:hover circle { opacity: 0.75; }
 
         .link {
             fill: none;
-            stroke-opacity: 0.5;
+            stroke-opacity: 0.6;
             stroke-width: 1;
         }
 
         .link.redundant {
             stroke-dasharray: 4 3;
-            stroke-opacity: 0.4;
+            stroke-opacity: 0.5;
         }
 
         .empty {
             position: absolute;
             inset: 0;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: var(--text-muted);
-            font-size: 12px;
-            letter-spacing: 0.1em;
+            gap: 12px;
             pointer-events: none;
+        }
+
+        .empty-title {
+            font-family: 'Lora', serif;
+            font-style: italic;
+            font-size: 42px;
+            color: var(--border);
+            letter-spacing: 0.02em;
+        }
+
+        .empty-sub {
+            font-size: 11px;
+            color: var(--border);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -186,18 +204,20 @@
     </div>
 </header>
 
-<div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#555"></div> file</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--cycle)"></div> cycle</div>
-    <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div> critical</div>
-    <div class="legend-item"><div class="legend-line" style="background:var(--normal)"></div> dependency</div>
-    <div class="legend-item"><div class="legend-line" style="background:var(--redundant); opacity:0.6"></div> redundant</div>
+<div class="legend" id="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1a4a66;border:1px solid #2a6080"></div> file</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6E0000;border:1px solid #BA0D18"></div> cycle</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b8c8d4;border:1px solid #d0dde5"></div> critical</div>
+    <div class="legend-item"><div class="legend-line" style="background:#0d3d58"></div> dependency</div>
+    <div class="legend-item"><div class="legend-dash"></div> redundant</div>
 </div>
 
 <div id="status"></div>
 
 <div id="graph">
-    <div class="empty" id="empty-msg">enter a project path and press analyse</div>
+    <div class="empty" id="empty-msg">
+        <span class="empty-title">Map your dependencies</span>
+    </div>
 </div>
 
 <script>
@@ -229,11 +249,13 @@
 
             if (!res.ok) {
                 setStatus(text, true);
+                document.getElementById('empty-msg').style.display = 'flex';
                 return;
             }
 
             const data = JSON.parse(text);
             setStatus(`${data.edges.length} edges · ${data.cycles.length} cycles · ${data.critical.length} critical · ${data.redundancy.length} redundant`);
+            document.getElementById('legend').classList.add('visible');
             renderGraph(data);
         } catch (e) {
             setStatus('connection error', true);
@@ -254,41 +276,62 @@
         const redundantKeys = new Set(data.redundancy.map(e => e.from_id + '→' + e.to_id));
 
         const nodeMap = new Map();
-        data.isolated.forEach(v => {
-            if (!nodeMap.has(v.id)) nodeMap.set(v.id, { id: v.id, label: v.label });
-        });
         data.edges.forEach(e => {
             if (!nodeMap.has(e.from_id)) nodeMap.set(e.from_id, { id: e.from_id, label: e.from_label });
-            if (!nodeMap.has(e.to_id)) nodeMap.set(e.to_id,   { id: e.to_id,   label: e.to_label });
+            if (!nodeMap.has(e.to_id))   nodeMap.set(e.to_id,   { id: e.to_id,   label: e.to_label });
         });
         data.critical.forEach(v => {
             if (!nodeMap.has(v.id)) nodeMap.set(v.id, { id: v.id, label: v.label });
         });
+        if (data.isolated) {
+            data.isolated.forEach(v => {
+                if (!nodeMap.has(v.id)) nodeMap.set(v.id, { id: v.id, label: v.label });
+            });
+        }
 
         const nodes = Array.from(nodeMap.values());
         const links = data.edges.map(e => ({
             source: e.from_id,
             target: e.to_id,
-            redundant: redundantKeys.has(e.from_id + '→' + e.to_id)
+            redundant: redundantKeys.has(e.from_id + '→' + e.to_id),
+            isCycle: cycleIds.has(e.from_id) && cycleIds.has(e.to_id)
         }));
 
         const container = document.getElementById('graph');
         const W = container.clientWidth;
         const H = container.clientHeight;
 
+        const nodeCount = nodes.length;
+        const linkDistance = nodeCount > 80 ? 60 : nodeCount > 30 ? 80 : 110;
+        const chargeStrength = nodeCount > 80 ? -120 : nodeCount > 30 ? -180 : -260;
+
         const svg = d3.select('#graph').append('svg');
 
-        svg.append('defs').append('marker')
-            .attr('id', 'arrow')
+        const defs = svg.append('defs');
+
+        defs.append('marker')
+            .attr('id', 'arrow-normal')
             .attr('viewBox', '0 -4 8 8')
-            .attr('refX', 18)
-            .attr('refY', 0)
-            .attr('markerWidth', 6)
-            .attr('markerHeight', 6)
+            .attr('refX', 17).attr('refY', 0)
+            .attr('markerWidth', 5).attr('markerHeight', 5)
             .attr('orient', 'auto')
-            .append('path')
-            .attr('d', 'M0,-4L8,0L0,4')
-            .attr('fill', '#444');
+            .append('path').attr('d', 'M0,-4L8,0L0,4').attr('fill', '#0d3d58');
+
+        defs.append('marker')
+            .attr('id', 'arrow-redundant')
+            .attr('viewBox', '0 -4 8 8')
+            .attr('refX', 17).attr('refY', 0)
+            .attr('markerWidth', 5).attr('markerHeight', 5)
+            .attr('orient', 'auto')
+            .append('path').attr('d', 'M0,-4L8,0L0,4').attr('fill', '#4d8fa8');
+
+        defs.append('marker')
+            .attr('id', 'arrow-cycle')
+            .attr('viewBox', '0 -4 8 8')
+            .attr('refX', 17).attr('refY', 0)
+            .attr('markerWidth', 5).attr('markerHeight', 5)
+            .attr('orient', 'auto')
+            .append('path').attr('d', 'M0,-4L8,0L0,4').attr('fill', '#8B0000');
 
         const g = svg.append('g');
 
@@ -298,8 +341,9 @@
             .data(links)
             .enter().append('line')
             .attr('class', d => 'link' + (d.redundant ? ' redundant' : ''))
-            .attr('stroke', d => d.redundant ? 'var(--redundant)' : 'var(--normal)')
-            .attr('marker-end', 'url(#arrow)');
+            .attr('stroke', d => d.isCycle ? '#8B0000' : d.redundant ? '#4d8fa8' : '#0d3d58')
+            .attr('stroke-opacity', d => d.isCycle ? 0.9 : d.redundant ? 0.6 : 0.6)
+            .attr('marker-end', d => d.isCycle ? 'url(#arrow-cycle)' : d.redundant ? 'url(#arrow-redundant)' : 'url(#arrow-normal)');
 
         const node = g.selectAll('.node')
             .data(nodes)
@@ -312,33 +356,38 @@
             );
 
         node.append('circle')
-            .attr('r', 7)
+            .attr('r', 6)
             .attr('fill', d => {
-                if (criticalIds.has(d.id)) return 'var(--critical)';
-                if (cycleIds.has(d.id)) return 'var(--cycle)';
-                return 'var(--node-bg)';
+                if (cycleIds.has(d.id))    return '#6E0000';
+                if (criticalIds.has(d.id)) return '#b8c8d4';
+                return '#1a4a66';
             })
             .attr('stroke', d => {
-                if (criticalIds.has(d.id)) return 'var(--critical)';
-                if (cycleIds.has(d.id)) return 'var(--cycle)';
-                return 'var(--node-border)';
-            });
+                if (cycleIds.has(d.id))    return '#BA0D18';
+                if (criticalIds.has(d.id)) return '#d0dde5';
+                return '#2a6080';
+            })
+            .attr('stroke-width', d => criticalIds.has(d.id) ? 2 : 1.5);
 
         node.append('text')
-            .attr('x', 10)
-            .attr('y', 4)
+            .attr('x', 9).attr('y', 4)
             .text(d => d.label);
 
+        const boundPad = 40;
         simulation = d3.forceSimulation(nodes)
-            .force('link', d3.forceLink(links).id(d => d.id).distance(90))
-            .force('charge', d3.forceManyBody().strength(-200))
+            .force('link', d3.forceLink(links).id(d => d.id).distance(linkDistance))
+            .force('charge', d3.forceManyBody().strength(chargeStrength))
             .force('center', d3.forceCenter(W / 2, H / 2))
+            .force('bound', () => {
+                nodes.forEach(d => {
+                    d.x = Math.max(boundPad, Math.min(W - boundPad, d.x));
+                    d.y = Math.max(boundPad, Math.min(H - boundPad, d.y));
+                });
+            })
             .on('tick', () => {
                 link
-                    .attr('x1', d => d.source.x)
-                    .attr('y1', d => d.source.y)
-                    .attr('x2', d => d.target.x)
-                    .attr('y2', d => d.target.y);
+                    .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
                 node.attr('transform', d => `translate(${d.x},${d.y})`);
             });
     }
