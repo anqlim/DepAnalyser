@@ -1,5 +1,7 @@
 # DepAnalyser
 
+![DepAnalyser graph](assets/graph.png)
+
 A tool for visualizing and analyzing dependency graphs of software projects.
 Supports C++, Python, Java, JavaScript/TypeScript, and Go.
 
