@@ -407,8 +407,8 @@
         const W = container.clientWidth;
         const H = container.clientHeight;
         const nodeCount = nodes.length;
-        const linkDistance = nodeCount > 80 ? 60 : nodeCount > 30 ? 80 : 110;
-        const chargeStrength = nodeCount > 80 ? -120 : nodeCount > 30 ? -180 : -260;
+        const linkDistance = nodeCount > 80 ? 120 : nodeCount > 30 ? 90 : 110;
+        const chargeStrength = nodeCount > 80 ? -400 : nodeCount > 30 ? -250 : -260;
 
         const svg = d3.select('#graph').append('svg');
         const defs = svg.append('defs');
@@ -453,23 +453,33 @@
 
         node.append('text').attr('x', 9).attr('y', 4).text(d => d.label);
 
-        const boundPad = 40;
+        const boundPadX = Math.min(80, W * 0.05);
+        const boundPadY = Math.min(80, H * 0.05);
+
+        const areaW = nodeCount > 80 ? W * 0.98 : nodeCount > 30 ? W * 0.85 : W * 0.65;
+        const areaH = nodeCount > 80 ? H * 0.98 : nodeCount > 30 ? H * 0.85 : H * 0.65;
+        const offsetX = (W - areaW) / 2;
+        const offsetY = (H - areaH) / 2;
+
         simulation = d3.forceSimulation(nodes)
             .force('link', d3.forceLink(links).id(d => d.id).distance(linkDistance))
             .force('charge', d3.forceManyBody().strength(chargeStrength))
             .force('center', d3.forceCenter(W / 2, H / 2))
-            .force('bound', () => {
-                nodes.forEach(d => {
-                    d.x = Math.max(boundPad, Math.min(W - boundPad, d.x));
-                    d.y = Math.max(boundPad, Math.min(H - boundPad, d.y));
-                });
-            })
             .on('tick', () => {
                 link
                     .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
                     .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
                 node.attr('transform', d => `translate(${d.x},${d.y})`);
             });
+
+        if (nodeCount <= 80) {
+            simulation.force('bound', () => {
+                nodes.forEach(d => {
+                    d.x = Math.max(offsetX + boundPadX, Math.min(offsetX + areaW - boundPadX, d.x));
+                    d.y = Math.max(offsetY + boundPadY, Math.min(offsetY + areaH - boundPadY, d.y));
+                });
+            });
+        }
     }
 </script>
 </body>

@@ -10,7 +10,8 @@ namespace DepAnalyser::Parsing {
     public:
         virtual ~Parser() = default;
         virtual std::vector<std::string> parse(const std::string& path,
-                                               const std::string& current_dir) = 0;
+                                               const std::string& current_dir,
+                                               const std::string& project_root) = 0;
     };
 
 }

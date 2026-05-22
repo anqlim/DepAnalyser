@@ -57,7 +57,7 @@ namespace DepAnalyser::Parsing {
         auto parser = ParserFactory::create(extension);
         if (!parser) return {path, {}};
         std::string current_dir = std::filesystem::path(path).parent_path().string();
-        return { path, parser->parse(path, current_dir) };
+        return { path, parser->parse(path, current_dir, project_path_) };
     }
 
     void GraphBuilder::buildGraph(const std::vector<Types::ParseResult>& results) {
@@ -69,9 +69,6 @@ namespace DepAnalyser::Parsing {
             for (auto& dependence : file.dependencies) {
                 auto* to = graph_.findVertex(dependence);
                 if (to != nullptr) graph_.addEdge(from, to);
-                if (to == nullptr) {
-                    std::cerr << "NOT FOUND: " << dependence << "\n";
-                }
             }
         }
     }
