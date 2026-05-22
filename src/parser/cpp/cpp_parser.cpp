@@ -3,7 +3,8 @@
 namespace DepAnalyser::Parsing {
 
     std::vector<std::string> CppParser::parse(const std::string& path,
-                                              const std::string& current_dir) {
+                                              const std::string& current_dir,
+                                              const std::string& project_root) {
         std::ifstream file(path);
         if (!file.is_open()) return {};
 
