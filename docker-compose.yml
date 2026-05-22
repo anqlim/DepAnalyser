@@ -13,6 +13,7 @@ services:
     volumes:
       # Временная папка для клонированных репозиториев
       - /tmp/dep-analyzer:/tmp/dep-analyzer
+      - D:\projects\DepAnalyser:/projects/DepAnalyser
 
   redis:
     image: redis:7-alpine

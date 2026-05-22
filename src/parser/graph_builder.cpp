@@ -1,4 +1,5 @@
 #include "graph_builder.h"
+#include <iostream>
 
 namespace DepAnalyser::Parsing {
 
@@ -29,11 +30,21 @@ namespace DepAnalyser::Parsing {
                 ".c", ".cpp", ".h", ".hpp", ".py", ".java", ".js", ".ts", ".go"
         };
 
-        for (auto& entry : std::filesystem::recursive_directory_iterator(project_path_)) {
-            if (entry.is_regular_file()) {
-                std::string ext = entry.path().extension().string();
+        const std::unordered_set<std::string> ignored_dirs = {
+                "build", "cmake-build-debug", "cmake-build-release", ".git", "node_modules", "_deps", ".cache"
+        };
+
+        for (auto it = std::filesystem::recursive_directory_iterator(
+                project_path_, std::filesystem::directory_options::skip_permission_denied);
+             it != std::filesystem::recursive_directory_iterator(); ++it) {
+            if (it->is_directory() && ignored_dirs.contains(it->path().filename().string())) {
+                it.disable_recursion_pending();
+                continue;
+            }
+            if (it->is_regular_file()) {
+                std::string ext = it->path().extension().string();
                 if (supported.contains(ext)) {
-                    files.push_back(entry.path().string());
+                    files.push_back(it->path().string());
                 }
             }
         }
@@ -58,6 +69,9 @@ namespace DepAnalyser::Parsing {
             for (auto& dependence : file.dependencies) {
                 auto* to = graph_.findVertex(dependence);
                 if (to != nullptr) graph_.addEdge(from, to);
+                if (to == nullptr) {
+                    std::cerr << "NOT FOUND: " << dependence << "\n";
+                }
             }
         }
     }

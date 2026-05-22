@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DepAnalyser</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --surface: #161616;
+            --border: #2a2a2a;
+            --text: #e8e8e8;
+            --text-muted: #666;
+            --accent: #00e5ff;
+            --cycle: #ff4757;
+            --critical: #ffa502;
+            --redundant: #a29bfe;
+            --normal: #444;
+            --node-bg: #1e1e1e;
+            --node-border: #333;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 7px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input[type="text"]:focus { border-color: var(--accent); }
+        input[type="text"]::placeholder { color: var(--text-muted); }
+
+        button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 7px 18px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        button:hover { opacity: 0.85; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            padding: 0 24px;
+            flex-shrink: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-line {
+            width: 20px;
+            height: 2px;
+        }
+
+        #status {
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 6px 24px;
+            flex-shrink: 0;
+            min-height: 24px;
+        }
+
+        #status.error { color: var(--cycle); }
+
+        #graph {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .node circle {
+            stroke-width: 1.5;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .node text {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            fill: var(--text-muted);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .node:hover circle { opacity: 0.8; }
+
+        .link {
+            fill: none;
+            stroke-opacity: 0.5;
+            stroke-width: 1;
+        }
+
+        .link.redundant {
+            stroke-dasharray: 4 3;
+            stroke-opacity: 0.4;
+        }
+
+        .empty {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>DepAnalyser</h1>
+    <div class="input-row">
+        <input type="text" id="path-input" placeholder="/absolute/path/to/project" />
+        <button id="analyse-btn" onclick="runAnalysis()">Analyse</button>
+    </div>
+</header>
+
+<div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#555"></div> file</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--cycle)"></div> cycle</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div> critical</div>
+    <div class="legend-item"><div class="legend-line" style="background:var(--normal)"></div> dependency</div>
+    <div class="legend-item"><div class="legend-line" style="background:var(--redundant); opacity:0.6"></div> redundant</div>
+</div>
+
+<div id="status"></div>
+
+<div id="graph">
+    <div class="empty" id="empty-msg">enter a project path and press analyse</div>
+</div>
+
+<script>
+    let simulation = null;
+
+    function setStatus(msg, isError = false) {
+        const el = document.getElementById('status');
+        el.textContent = msg;
+        el.className = isError ? 'error' : '';
+    }
+
+    async function runAnalysis() {
+        const path = document.getElementById('path-input').value.trim();
+        if (!path) return;
+
+        const btn = document.getElementById('analyse-btn');
+        btn.disabled = true;
+        setStatus('analysing...');
+        document.getElementById('empty-msg').style.display = 'none';
+
+        try {
+            const res = await fetch('/analyse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path })
+            });
+
+            const text = await res.text();
+
+            if (!res.ok) {
+                setStatus(text, true);
+                return;
+            }
+
+            const data = JSON.parse(text);
+            setStatus(`${data.edges.length} edges · ${data.cycles.length} cycles · ${data.critical.length} critical · ${data.redundancy.length} redundant`);
+            renderGraph(data);
+        } catch (e) {
+            setStatus('connection error', true);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    document.getElementById('path-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') runAnalysis();
+    });
+
+    function renderGraph(data) {
+        d3.select('#graph svg').remove();
+
+        const cycleIds = new Set(data.cycles.flat().map(v => v.id));
+        const criticalIds = new Set(data.critical.map(v => v.id));
+        const redundantKeys = new Set(data.redundancy.map(e => e.from_id + '→' + e.to_id));
+
+        const nodeMap = new Map();
+        data.isolated.forEach(v => {
+            if (!nodeMap.has(v.id)) nodeMap.set(v.id, { id: v.id, label: v.label });
+        });
+        data.edges.forEach(e => {
+            if (!nodeMap.has(e.from_id)) nodeMap.set(e.from_id, { id: e.from_id, label: e.from_label });
+            if (!nodeMap.has(e.to_id)) nodeMap.set(e.to_id,   { id: e.to_id,   label: e.to_label });
+        });
+        data.critical.forEach(v => {
+            if (!nodeMap.has(v.id)) nodeMap.set(v.id, { id: v.id, label: v.label });
+        });
+
+        const nodes = Array.from(nodeMap.values());
+        const links = data.edges.map(e => ({
+            source: e.from_id,
+            target: e.to_id,
+            redundant: redundantKeys.has(e.from_id + '→' + e.to_id)
+        }));
+
+        const container = document.getElementById('graph');
+        const W = container.clientWidth;
+        const H = container.clientHeight;
+
+        const svg = d3.select('#graph').append('svg');
+
+        svg.append('defs').append('marker')
+            .attr('id', 'arrow')
+            .attr('viewBox', '0 -4 8 8')
+            .attr('refX', 18)
+            .attr('refY', 0)
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-4L8,0L0,4')
+            .attr('fill', '#444');
+
+        const g = svg.append('g');
+
+        svg.call(d3.zoom().scaleExtent([0.1, 4]).on('zoom', e => g.attr('transform', e.transform)));
+
+        const link = g.selectAll('.link')
+            .data(links)
+            .enter().append('line')
+            .attr('class', d => 'link' + (d.redundant ? ' redundant' : ''))
+            .attr('stroke', d => d.redundant ? 'var(--redundant)' : 'var(--normal)')
+            .attr('marker-end', 'url(#arrow)');
+
+        const node = g.selectAll('.node')
+            .data(nodes)
+            .enter().append('g')
+            .attr('class', 'node')
+            .call(d3.drag()
+                .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+                .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
+                .on('end',   (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+            );
+
+        node.append('circle')
+            .attr('r', 7)
+            .attr('fill', d => {
+                if (criticalIds.has(d.id)) return 'var(--critical)';
+                if (cycleIds.has(d.id)) return 'var(--cycle)';
+                return 'var(--node-bg)';
+            })
+            .attr('stroke', d => {
+                if (criticalIds.has(d.id)) return 'var(--critical)';
+                if (cycleIds.has(d.id)) return 'var(--cycle)';
+                return 'var(--node-border)';
+            });
+
+        node.append('text')
+            .attr('x', 10)
+            .attr('y', 4)
+            .text(d => d.label);
+
+        simulation = d3.forceSimulation(nodes)
+            .force('link', d3.forceLink(links).id(d => d.id).distance(90))
+            .force('charge', d3.forceManyBody().strength(-200))
+            .force('center', d3.forceCenter(W / 2, H / 2))
+            .on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+    }
+</script>
+</body>
+</html>
