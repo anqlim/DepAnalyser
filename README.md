@@ -25,7 +25,7 @@ Supports C++, Python, Java, JavaScript/TypeScript, and Go.
 **Requirements:** Docker Desktop
 
 ```bash
-git clone https://github.com/your-username/DepAnalyser
+git clone https://github.com/anqlim/DepAnalyser
 cd DepAnalyser
 docker compose up --build
 ```
