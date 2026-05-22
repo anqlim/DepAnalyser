@@ -10,12 +10,13 @@ namespace DepAnalyser::Parsing {
         std::string line;
         std::vector<std::string> dependencies;
         while (std::getline(file, line)) {
-            if (line.find("#include") != std::string::npos) {
+            size_t pos = line.find("#include");
+            if (pos != std::string::npos && line.find_first_not_of(" \t") == pos) {
                 size_t start = line.find('\"');
                 size_t end = line.find('\"', start + 1);
                 if (start != std::string::npos && end != std::string::npos) {
                     std::string file_name = line.substr(start + 1, end - start - 1);
-                    std::filesystem::path resolved = std::filesystem::path(current_dir) / file_name;
+                    std::filesystem::path resolved = (std::filesystem::path(current_dir) / file_name).lexically_normal();
                     dependencies.push_back(resolved.string());
                 }
             }

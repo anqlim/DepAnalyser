@@ -2,15 +2,18 @@
 #include <nlohmann/json.hpp>
 #include "server/analysis_service.h"
 
-int main(int argc, char* argv[]) {
+int main() {
     using namespace DepAnalyser;
     crow::SimpleApp app;
 
+    const char* redis_host = std::getenv("REDIS_HOST");
     sw::redis::ConnectionOptions conn_opts;
-    conn_opts.host = "127.0.0.1";
+    conn_opts.host = redis_host ? redis_host : "127.0.0.1";
     conn_opts.port = 6379;
+
     sw::redis::ConnectionPoolOptions pool_opts;
     pool_opts.size = 4;
+
     auto redis = sw::redis::Redis(conn_opts, pool_opts);
 
     CROW_ROUTE(app, "/analyse").methods(crow::HTTPMethod::POST)
@@ -31,6 +34,16 @@ int main(int argc, char* argv[]) {
                 catch (const std::exception& e) {
                     return crow::response(500, e.what());
                 }
+            });
+
+    CROW_ROUTE(app, "/")
+            ([]() {
+                std::ifstream file("frontend/index.html");
+                std::string body((std::istreambuf_iterator<char>(file)),
+                                 std::istreambuf_iterator<char>());
+                crow::response res(200, body);
+                res.set_header("Content-Type", "text/html");
+                return res;
             });
 
     app.port(8080).run();

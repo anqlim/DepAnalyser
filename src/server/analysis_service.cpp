@@ -41,7 +41,14 @@ namespace DepAnalyser::AnalysisService {
         using json = nlohmann::json;
         json result;
         result["edges"] = json::array();
+        result["isolated"] = json::array();
         for (const auto& [name, u] : graph.getVertices()) {
+            if (u->dependencies.empty() && u->dependents.empty()) {
+                result["isolated"].push_back({
+                                                     {"id", name},
+                                                     {"label", std::filesystem::path(name).filename().string()}
+                                             });
+            }
             for (const auto& v : u->dependencies) {
                 result["edges"].push_back({
                                                   {"from_id", name},
