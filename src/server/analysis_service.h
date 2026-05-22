@@ -16,4 +16,8 @@ namespace DepAnalyser::AnalysisService {
 
     std::string analyse(std::string_view path, sw::redis::Redis& redis);
 
+    std::string analyseRepo(const std::string& github_url, sw::redis::Redis& redis);
+
+    std::string analyseZip(const std::string& zip_path, sw::redis::Redis& redis);
+
 }

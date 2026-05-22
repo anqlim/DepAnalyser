@@ -2,6 +2,37 @@
 
 namespace DepAnalyser::AnalysisService {
 
+    std::string analyseZip(const std::string& zip_path, sw::redis::Redis& redis) {
+        std::string tmp_path = "/tmp/depanalyser_" + std::to_string(std::hash<std::string>{}(zip_path));
+        std::filesystem::remove_all(tmp_path);
+        std::filesystem::create_directories(tmp_path);
+
+        std::string cmd = "unzip -q " + zip_path + " -d " + tmp_path;
+        if (std::system(cmd.c_str()) != 0) {
+            std::filesystem::remove_all(tmp_path);
+            throw std::runtime_error("unzip failed");
+        }
+
+        std::string result = analyse(tmp_path, redis);
+        std::filesystem::remove_all(tmp_path);
+        std::filesystem::remove(zip_path);
+        return result;
+    }
+
+    std::string analyseRepo(const std::string& github_url, sw::redis::Redis& redis) {
+        std::string tmp_path = "/tmp/depanalyser_" + std::to_string(std::hash<std::string>{}(github_url));
+        std::filesystem::remove_all(tmp_path);
+
+        std::string cmd = "git clone --depth=1 " + github_url + " " + tmp_path;
+        if (std::system(cmd.c_str()) != 0) {
+            throw std::runtime_error("git clone failed");
+        }
+
+        std::string result = analyse(tmp_path, redis);
+        std::filesystem::remove_all(tmp_path);
+        return result;
+    }
+
     std::string analyse(std::string_view path, sw::redis::Redis& redis) {
         auto key = computeCacheKey(path);
 
